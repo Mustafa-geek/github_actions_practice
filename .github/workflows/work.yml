@@ -37,7 +37,7 @@ jobs:
       - name: Run Final Sanity Tests
         run: |
           npm install
-          npm run test:ci
+          npm run test   #calling the test in package.json->scripts
 
       - name: Build Docker Container Image (Package)
         run: docker build -t my-production-app:${{ github.sha }} .
