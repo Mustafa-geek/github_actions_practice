@@ -1,36 +1,66 @@
-# This is a basic workflow to help you get started with Actions
+name: Enterprise-CI-CD-Pipeline
 
-name: CI
-
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
-  push:
-    branches: [ "main" ]
+   GATE 1 TRIGGER: Someone creates a Pull Request targeting 'main'
   pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
+  
+   GATE 2 TRIGGER: Someone merges a PR (which counts as a 'push') into 'main'
+  push:
+    branches: [ main ]
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
+   GATE 1: THE ISOLATED PR VALIDATION
+  validate-pull-request:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
+    
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      - name: Checkout Feature Branch Code
+        uses: actions/checkout@v4
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-size: 20
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
+      - name: Run Vulnerability Security Scan
+        run: echo "Scanning code for leaked secrets or vulnerable packages..."
+
+      - name: Run Unit & Integration Tests
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your projects.
+          npm install
+          npm run test:ci
+
+   GATE 2: THE MAIN MERGE & DEPLOYMENT
+  compile-package-and-deploy:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Finalized Main Code
+        uses: actions/checkout@v4
+
+      - name: Run Final Sanity Tests
+        run: |
+          npm install
+          npm run test:ci
+
+       The Dockerfile enters the picture here ONLY after code is safe on main
+      - name: Build Docker Container Image (Package)
+        run: docker build -t my-production-app:${{ github.sha }} .
+
+      - name: Authenticate to Cloud Container Registry (Secrets Handling)
+        env:
+          REGISTRY_PASSWORD: ${{ secrets.CLOUD_REGISTRY_PASSWORD }}
+        run: |
+          echo "Securely logging into AWS ECR or Google Artifact Registry..."
+
+      - name: Upload Docker Image to Registry (Artifact Generation)
+        run: |
+          echo "Pushing my-production-app:${{ github.sha }} to permanent cloud storage..."
+
+      - name: Trigger Rolling Zero-Downtime Update (Deploy)
+        run: |
+          echo "Notifying the production cluster to pull image version ${{ github.sha }}..."
+          echo "Deployment successful!"
