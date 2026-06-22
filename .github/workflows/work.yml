@@ -1,20 +1,15 @@
 name: Enterprise-CI-CD-Pipeline
 
 on:
-   GATE 1 TRIGGER: Someone creates a Pull Request targeting 'main'
   pull_request:
-    branches: [ main ]
-  
-   GATE 2 TRIGGER: Someone merges a PR (which counts as a 'push') into 'main'
+    branches: [main]
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
-   GATE 1: THE ISOLATED PR VALIDATION
   validate-pull-request:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout Feature Branch Code
         uses: actions/checkout@v4
@@ -22,7 +17,7 @@ jobs:
       - name: Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
-          node-size: 20
+          node-version: '20'
 
       - name: Run Vulnerability Security Scan
         run: echo "Scanning code for leaked secrets or vulnerable packages..."
@@ -32,11 +27,9 @@ jobs:
           npm install
           npm run test:ci
 
-   GATE 2: THE MAIN MERGE & DEPLOYMENT
   compile-package-and-deploy:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout Finalized Main Code
         uses: actions/checkout@v4
@@ -46,21 +39,18 @@ jobs:
           npm install
           npm run test:ci
 
-       The Dockerfile enters the picture here ONLY after code is safe on main
       - name: Build Docker Container Image (Package)
         run: docker build -t my-production-app:${{ github.sha }} .
 
       - name: Authenticate to Cloud Container Registry (Secrets Handling)
         env:
           REGISTRY_PASSWORD: ${{ secrets.CLOUD_REGISTRY_PASSWORD }}
-        run: |
-          echo "Securely logging into AWS ECR or Google Artifact Registry..."
+        run: echo "Securely logging into AWS ECR or Google Artifact Registry..."
 
       - name: Upload Docker Image to Registry (Artifact Generation)
-        run: |
-          echo "Pushing my-production-app:${{ github.sha }} to permanent cloud storage..."
+        run: echo "Pushing my-production-app:${{ github.sha }} to permanent cloud storage..."
 
       - name: Trigger Rolling Zero-Downtime Update (Deploy)
         run: |
           echo "Notifying the production cluster to pull image version ${{ github.sha }}..."
-          echo "Deployment successful!"
+          echo "Deployment successful!"   
