@@ -1,0 +1,17 @@
+name: 'Custom Greeting Action'
+description: 'Greets a DevOps student and prints an encouraging message'
+inputs:
+  student_name:
+    description: 'The name of the student'
+    required: true
+    default: 'DevOps Hero'
+runs:
+  using: 'composite'
+  steps:
+    - name: Run Greeting Script
+      shell: bash
+      run: |
+        echo "============================================="
+        echo "🚀 Hello ${{ inputs.student_name }}!"
+        echo "🎯 You just built and triggered your first custom action!"
+        echo "============================================="
