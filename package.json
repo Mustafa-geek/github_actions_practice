@@ -1,0 +1,10 @@
+{
+  "name": "devops-practice-app",
+  "version": "1.0.0",
+  "description": "Dummy app for pipeline practice",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo 'Sanity tests passed successfully!'"
+  },
+  "dependencies": {}
+}
