@@ -1,0 +1,11 @@
+name: Try Log Secrets
+
+on:
+  workflow_dispatch:                                      # 1. MANUAL TRIGGER
+
+jobs:
+  log:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log the secret
+        run: echo ${{ secrets.MY_SECRET }}            # 2. SECRETS
