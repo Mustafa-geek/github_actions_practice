@@ -1,0 +1,56 @@
+name: Enterprise-CI-CD-Pipeline
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  validate-pull-request:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Feature Branch Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Vulnerability Security Scan
+        run: echo "Scanning code for leaked secrets or vulnerable packages..."
+
+      - name: Run Unit & Integration Tests
+        run: |
+          npm install
+          npm run test
+
+  compile-package-and-deploy:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Finalized Main Code
+        uses: actions/checkout@v4
+
+      - name: Run Final Sanity Tests
+        run: |
+          npm install
+          npm run test   #calling the test in package.json->scripts
+
+      - name: Build Docker Container Image (Package)
+        run: docker build -t my-production-app:${{ github.sha }} .
+
+      - name: Authenticate to Cloud Container Registry (Secrets Handling)
+        env:
+          REGISTRY_PASSWORD: ${{ secrets.CLOUD_REGISTRY_PASSWORD }}
+        run: echo "Securely logging into AWS ECR or Google Artifact Registry..."
+
+      - name: Upload Docker Image to Registry (Artifact Generation)
+        run: echo "Pushing my-production-app:${{ github.sha }} to permanent cloud storage..."     #we can use the actions/upload-artifact@master
+
+      - name: Trigger Rolling Zero-Downtime Update (Deploy)
+        run: |
+          echo "Notifying the production cluster to pull image version ${{ github.sha }}..."
+          echo "Deployment successful!"   
